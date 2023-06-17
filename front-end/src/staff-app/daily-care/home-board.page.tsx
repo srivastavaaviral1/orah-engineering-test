@@ -10,19 +10,41 @@ import { Person, PersonHelper } from "shared/models/person"
 import { useApi } from "shared/hooks/use-api"
 import { StudentListTile } from "staff-app/components/student-list-tile/student-list-tile.component"
 import { ActiveRollOverlay, ActiveRollAction } from "staff-app/components/active-roll-overlay/active-roll-overlay.component"
+import SortDropdown, { ToolbarAction } from "staff-app/components/header/dropDown.component"
 
 export const HomeBoardPage: React.FC = () => {
   const [isRollMode, setIsRollMode] = useState(false)
-  const [searchText, setSearchText] = useState<string>("")
+  const [searchStudents, setSearchStudents] = useState<Person[]>([])
+  const [students, setStudents] = useState<Person[]>([])
+  const [isSortDropdownOpen, setIsisSortDropdownOpen] = useState<Boolean>(false)
+  const [sortAction, setSortAction] = useState<ToolbarAction>('')
   const [getStudents, data, loadState] = useApi<{ students: Person[] }>({ url: "get-homeboard-students" })
 
   useEffect(() => {
     void getStudents()
   }, [getStudents])
 
+  useEffect(() => {
+    if (loadState === "loaded") {
+      setStudents(data!.students)
+      setSearchStudents(data!.students)
+    }
+  }, [loadState])
+
   const onToolbarAction = (action: ToolbarAction) => {
+    if(action !== "roll") {
+      setSortAction(action)
+    }
+
     if (action === "roll") {
       setIsRollMode(true)
+    }
+
+    if (loadState === "loaded") {
+      action === "first_name_asc" && setSearchStudents(() => [...searchStudents.sort((a, b) => (a.first_name.toLowerCase() > b.first_name.toLowerCase() ? 1 : -1))])
+      action === "first_name_dec" && setSearchStudents(() => [...searchStudents.sort((a, b) => (a.first_name.toLowerCase() < b.first_name.toLowerCase() ? 1 : -1))])
+      action === "last_name_asc" && setSearchStudents(() => [...searchStudents.sort((a, b) => (a.last_name.toLowerCase() > b.last_name.toLowerCase() ? 1 : -1))])
+      action === "last_name_dec" && setSearchStudents(() => [...searchStudents.sort((a, b) => (a.last_name.toLowerCase() < b.last_name.toLowerCase() ? 1 : -1))])
     }
   }
 
@@ -32,10 +54,20 @@ export const HomeBoardPage: React.FC = () => {
     }
   }
 
+  const onStudentSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value) {
+      const searchedStudents = students.filter((student) => PersonHelper.getFullName(student).toUpperCase().includes(e.target.value.toUpperCase()))
+      setSearchStudents(() => [...searchedStudents])
+    } else {
+      setSearchStudents(() => [...students])
+    }
+  }
+
   return (
     <>
       <S.PageContainer>
-        <Toolbar onItemClick={onToolbarAction} setSearchText={setSearchText} searchText={searchText} />
+        <Toolbar sortAction={sortAction} onItemClick={onToolbarAction} onStudentSearch={onStudentSearch} setIsisSortDropdownOpen={setIsisSortDropdownOpen} isSortDropdownOpen={isSortDropdownOpen} />
 
         {loadState === "loading" && (
           <CenteredContainer>
@@ -45,10 +77,8 @@ export const HomeBoardPage: React.FC = () => {
 
         {loadState === "loaded" && data?.students && (
           <>
-            {data.students.map((s: Person) => {
-              if (PersonHelper.getFullName(s).toUpperCase().includes(searchText.toUpperCase())) {
-                return <StudentListTile key={s.id} isRollMode={isRollMode} student={s} />
-              }
+            {searchStudents.map((s: Person) => {
+              return <StudentListTile key={s.id} isRollMode={isRollMode} student={s} />
             })}
           </>
         )}
@@ -63,28 +93,24 @@ export const HomeBoardPage: React.FC = () => {
     </>
   )
 }
-
-type ToolbarAction = "roll" | "sort"
 interface ToolbarProps {
   onItemClick: (action: ToolbarAction, value?: string) => void
-  setSearchText: (searchText: string) => void
-  searchText: string
+  onStudentSearch: (e: React.ChangeEvent<HTMLInputElement>) => void
+  setIsisSortDropdownOpen: (e: Boolean) => void
+  isSortDropdownOpen: Boolean
+  sortAction: ToolbarAction
 }
 
 const Toolbar: React.FC<ToolbarProps> = (props) => {
-  const { onItemClick, setSearchText, searchText } = props
+  const { onItemClick, onStudentSearch, setIsisSortDropdownOpen, isSortDropdownOpen, sortAction } = props
   return (
     <S.ToolbarContainer>
-      <div onClick={() => onItemClick("sort")}>First Name</div>
-      <S.StyledTextField
-        className="searchTextField"
-        label="Search"
-        variant="standard"
-        value={searchText}
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-          setSearchText(event.target.value)
-        }}
-      />
+      <S.Button onClick={() => setIsisSortDropdownOpen(true)}>
+        Full Name <FontAwesomeIcon icon="sort" size="1x" style={{ marginLeft: `${Spacing.u1}` }} />
+      </S.Button>
+
+      {isSortDropdownOpen && <SortDropdown onItemClick={onItemClick} setIsSortDropdownOpen={setIsisSortDropdownOpen} sortAction={sortAction}/>}
+      <S.StyledTextField className="searchTextField" label="Search" variant="standard" onChange={onStudentSearch} />
       <S.Button onClick={() => onItemClick("roll")}>Start Roll</S.Button>
     </S.ToolbarContainer>
   )
@@ -106,11 +132,11 @@ const S = {
     padding: 6px 14px;
     font-weight: ${FontWeight.strong};
     border-radius: ${BorderRadius.default};
+    position: relative;
   `,
   StyledTextField: styled(TextField)`
     && {
       color: #fff;
-      /* border: 1px solid red; */
       .MuiFormLabel-root {
         color: #fff;
       }
@@ -127,6 +153,9 @@ const S = {
   `,
   Button: styled(Button)`
     && {
+      display: flex;
+      justify-content: center;
+      align-items: center;
       padding: ${Spacing.u2};
       font-weight: ${FontWeight.strong};
       border-radius: ${BorderRadius.default};
