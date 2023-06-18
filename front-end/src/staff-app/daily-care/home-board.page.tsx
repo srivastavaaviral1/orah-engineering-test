@@ -26,6 +26,7 @@ export const HomeBoardPage: React.FC = () => {
   const [sortAction, setSortAction] = useState<ToolbarAction>("")
   const [filterStudent, setFilterStudent] = useState("all")
   const [getStudents, data, loadState] = useApi<{ students: Person[] }>({ url: "get-homeboard-students" })
+  const [saveRoll] = useApi<{ students: Person[] }>({ url: "save-roll" })
 
   useEffect(() => {
     void getStudents()
@@ -66,6 +67,10 @@ export const HomeBoardPage: React.FC = () => {
     }
     if(action ===  "filter") {
       setFilterStudent(value || "all")
+    }
+    if(action === "complete") {
+      saveRoll({student_roll_states: searchStudents.map((student) => ({student_id: student.id, roll_state: student.rollState}))})
+      setIsRollMode(false)
     }
   }
 
@@ -154,7 +159,8 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
       </S.Button>
 
       {isSortDropdownOpen && <SortDropdown onItemClick={onItemClick} setIsSortDropdownOpen={setIsisSortDropdownOpen} sortAction={sortAction} />}
-      <S.StyledTextField className="searchTextField" label="Search" variant="standard" onChange={onStudentSearch} />
+      <S.StyledTextField  size="small"
+      type="search"  label="Search Student" variant="outlined" onChange={onStudentSearch} />
       <S.Button onClick={() => onItemClick("roll")}>Start Roll</S.Button>
     </S.ToolbarContainer>
   )
@@ -179,19 +185,23 @@ const S = {
     position: relative;
   `,
   StyledTextField: styled(TextField)`
-    && {
-      color: #fff;
-      .MuiFormLabel-root {
-        color: #fff;
+    & label.Mui-focused {
+      color: white !important;
+    }
+    & label {
+      color: white !important;
+    }
+    & .MuiOutlinedInput-root {
+      color: white !important;
+      & fieldset {
+        border-color: white;
       }
-      .MuiInputBase-root {
-        border-radius: 4px;
-        padding: ${Spacing.u1};
-        margin-top: 0px;
-        color: #fff;
+      &:hover fieldset {
+        border-color: white;
       }
-      .MuiInputBase-input {
-        /* padding: ${Spacing.u2}; */
+      &.Mui-focused fieldset {
+        border-color: white;
+        color: white;
       }
     }
   `,

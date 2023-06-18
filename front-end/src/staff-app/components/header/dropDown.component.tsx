@@ -25,10 +25,10 @@ const SortDropdown: React.FC<SortDropdownProps> = ({ onItemClick, setIsSortDropd
     <S.DropdownContainer>
       <FormControl component="fieldset" >
         <RadioGroup value={selectedOption} onChange={handleOptionChange}>
-          <FormControlLabel value="first_name_asc" control={<Radio color="primary" />} label="First Name A-Z" />
-          <FormControlLabel value="first_name_dec" control={<Radio color="primary" />} label="First Name Z-A" />
-          <FormControlLabel value="last_name_asc" control={<Radio color="primary" />} label="Last Name A-Z" />
-          <FormControlLabel value="last_name_dec" control={<Radio color="primary" />} label="Last Name Z-A" />
+          <S.FormControlLabel value="first_name_asc" control={<Radio />} label="First Name A-Z" />
+          <S.FormControlLabel value="first_name_dec" control={<Radio />} label="First Name Z-A" />
+          <S.FormControlLabel value="last_name_asc" control={<Radio />} label="Last Name A-Z" />
+          <S.FormControlLabel value="last_name_dec" control={<Radio />} label="Last Name Z-A" />
         </RadioGroup>
         <S.ButtonContainer onClick={() =>  setIsSortDropdownOpen(false)}>
         <S.Button onClick={() => onItemClick("")}>Clear</S.Button>
@@ -67,6 +67,14 @@ const S = {
         font-weight: ${FontWeight.strong};
         border-radius: ${BorderRadius.default};
       }
+    `,
+    FormControlLabel: styled(FormControlLabel)`
+      && {
+        color:#fff
+      }
+      & .MuiRadio-colorSecondary.Mui-checked {
+          color: #fff
+        }
     `,
   }
 
