@@ -11,13 +11,20 @@ import { useApi } from "shared/hooks/use-api"
 import { StudentListTile } from "staff-app/components/student-list-tile/student-list-tile.component"
 import { ActiveRollOverlay, ActiveRollAction } from "staff-app/components/active-roll-overlay/active-roll-overlay.component"
 import SortDropdown, { ToolbarAction } from "staff-app/components/header/dropDown.component"
+import { RollStateType } from "shared/models/roll"
 
 export const HomeBoardPage: React.FC = () => {
   const [isRollMode, setIsRollMode] = useState(false)
   const [searchStudents, setSearchStudents] = useState<Person[]>([])
   const [students, setStudents] = useState<Person[]>([])
+  const [attendance, setAttendance] = useState({
+    present: 0,
+    late: 0,
+    absent: 0,
+  })
   const [isSortDropdownOpen, setIsisSortDropdownOpen] = useState<Boolean>(false)
-  const [sortAction, setSortAction] = useState<ToolbarAction>('')
+  const [sortAction, setSortAction] = useState<ToolbarAction>("")
+  const [filterStudent, setFilterStudent] = useState("all")
   const [getStudents, data, loadState] = useApi<{ students: Person[] }>({ url: "get-homeboard-students" })
 
   useEffect(() => {
@@ -26,13 +33,18 @@ export const HomeBoardPage: React.FC = () => {
 
   useEffect(() => {
     if (loadState === "loaded") {
+      if (isRollMode) {
+        data!.students.forEach((s) => {
+          s.rollState = "unmark"
+        })
+      }
       setStudents(data!.students)
       setSearchStudents(data!.students)
     }
-  }, [loadState])
+  }, [loadState, isRollMode])
 
   const onToolbarAction = (action: ToolbarAction) => {
-    if(action !== "roll") {
+    if (action !== "roll") {
       setSortAction(action)
     }
 
@@ -56,7 +68,7 @@ export const HomeBoardPage: React.FC = () => {
 
   const onStudentSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    if (value) {
+    if (value.trim()) {
       const searchedStudents = students.filter((student) => PersonHelper.getFullName(student).toUpperCase().includes(e.target.value.toUpperCase()))
       setSearchStudents(() => [...searchedStudents])
     } else {
@@ -64,10 +76,34 @@ export const HomeBoardPage: React.FC = () => {
     }
   }
 
+  function getAttendance(id: number, rollState: RollStateType) {
+    searchStudents?.forEach((s) => s.id === id && (s.rollState = rollState))
+
+    let presentCount = 0
+    let lateCount = 0
+    let absentCount = 0
+
+    searchStudents.forEach((s) => {
+      if (s.rollState === "present") presentCount++
+      if (s.rollState === "late") lateCount++
+      if (s.rollState === "absent") absentCount++
+    })
+
+    setAttendance((prev) => {
+      return { ...prev, present: presentCount, late: lateCount, absent: absentCount }
+    })
+  }
+
   return (
     <>
       <S.PageContainer>
-        <Toolbar sortAction={sortAction} onItemClick={onToolbarAction} onStudentSearch={onStudentSearch} setIsisSortDropdownOpen={setIsisSortDropdownOpen} isSortDropdownOpen={isSortDropdownOpen} />
+        <Toolbar
+          sortAction={sortAction}
+          onItemClick={onToolbarAction}
+          onStudentSearch={onStudentSearch}
+          setIsisSortDropdownOpen={setIsisSortDropdownOpen}
+          isSortDropdownOpen={isSortDropdownOpen}
+        />
 
         {loadState === "loading" && (
           <CenteredContainer>
@@ -77,9 +113,14 @@ export const HomeBoardPage: React.FC = () => {
 
         {loadState === "loaded" && data?.students && (
           <>
-            {searchStudents.map((s: Person) => {
-              return <StudentListTile key={s.id} isRollMode={isRollMode} student={s} />
-            })}
+              {searchStudents
+              .filter((student) => {
+                if (filterStudent === "all") return student
+                else if (student.rollState === filterStudent) return student
+              })
+              .map((s) => (
+                <StudentListTile key={s.id} isRollMode={isRollMode} student={s} getAttendance={getAttendance} />
+              ))}
           </>
         )}
 
@@ -89,7 +130,7 @@ export const HomeBoardPage: React.FC = () => {
           </CenteredContainer>
         )}
       </S.PageContainer>
-      <ActiveRollOverlay isActive={isRollMode} onItemClick={onActiveRollAction} />
+      <ActiveRollOverlay filterStudent={setFilterStudent} isActive={isRollMode} studentAttendance={{ total: students?.length, ...attendance }} onItemClick={onActiveRollAction} />
     </>
   )
 }
@@ -109,7 +150,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
         Full Name <FontAwesomeIcon icon="sort" size="1x" style={{ marginLeft: `${Spacing.u1}` }} />
       </S.Button>
 
-      {isSortDropdownOpen && <SortDropdown onItemClick={onItemClick} setIsSortDropdownOpen={setIsisSortDropdownOpen} sortAction={sortAction}/>}
+      {isSortDropdownOpen && <SortDropdown onItemClick={onItemClick} setIsSortDropdownOpen={setIsisSortDropdownOpen} sortAction={sortAction} />}
       <S.StyledTextField className="searchTextField" label="Search" variant="standard" onChange={onStudentSearch} />
       <S.Button onClick={() => onItemClick("roll")}>Start Roll</S.Button>
     </S.ToolbarContainer>
