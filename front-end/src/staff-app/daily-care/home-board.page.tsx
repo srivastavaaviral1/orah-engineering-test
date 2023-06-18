@@ -60,9 +60,12 @@ export const HomeBoardPage: React.FC = () => {
     }
   }
 
-  const onActiveRollAction = (action: ActiveRollAction) => {
+  const onActiveRollAction = (action: ActiveRollAction, value?: string) => {
     if (action === "exit") {
       setIsRollMode(false)
+    }
+    if(action ===  "filter") {
+      setFilterStudent(value || "all")
     }
   }
 
@@ -130,7 +133,7 @@ export const HomeBoardPage: React.FC = () => {
           </CenteredContainer>
         )}
       </S.PageContainer>
-      <ActiveRollOverlay filterStudent={setFilterStudent} isActive={isRollMode} studentAttendance={{ total: students?.length, ...attendance }} onItemClick={onActiveRollAction} />
+      <ActiveRollOverlay isActive={isRollMode} studentAttendance={{ total: students?.length, ...attendance }} onItemClick={onActiveRollAction} />
     </>
   )
 }

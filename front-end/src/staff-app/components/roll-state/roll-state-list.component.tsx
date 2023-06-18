@@ -4,20 +4,19 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { RollStateIcon } from "staff-app/components/roll-state/roll-state-icon.component"
 import { Spacing, FontWeight } from "shared/styles/styles"
 import { RollStateType } from "shared/models/roll"
+import { ActiveRollAction } from "../active-roll-overlay/active-roll-overlay.component"
 
 interface Props {
   stateList: StateList[]
-  onItemClick?: (type: ItemType) => void
+  onItemClick: (action: ActiveRollAction, value: ItemType) => void
   size?: number
-  filterStudent: (filterType: ItemType) => void
 }
 
-export const RollStateList: React.FC<Props> = ({ stateList, size = 14, onItemClick, filterStudent }) => {
+export const RollStateList: React.FC<Props> = ({ stateList, size = 14, onItemClick }) => {
   const onClick = (type: ItemType) => {
     if (onItemClick) {
-      onItemClick(type)
+      onItemClick("filter", type)
     }
-    filterStudent(type)
   }
 
   return (
